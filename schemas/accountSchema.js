@@ -2,11 +2,30 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
 const accountSchema = new mongoose.Schema({
-    numeroCuenta: { type: Number, unique: true },
-    documentoCliente: { type: String, required: true },
-    fechaApertura: { type: Date, required: true },
-    saldo: { type: Number, required: true, default: 0 },
-    claveAcceso: { type: String, required: true }
+    numeroCuenta: { 
+        type: Number, 
+        unique: true 
+    },
+    documentoCliente: { 
+        type: String, 
+        required: true 
+    },
+    fechaApertura: { 
+        type: Date, 
+        required: true 
+    },
+    saldo: { 
+        type: Number, 
+        required: true, 
+        default: 500, // Set default to the minimum required value
+        min: [500, 'Balance must be at least 500'] // Ensure balance is at least 500
+    },
+    claveAcceso: { 
+        type: String, 
+        required: true,
+        minlength: 4, // Ensures claveAcceso is at least 4 characters
+        maxlength: 4  // Ensures claveAcceso is exactly 4 characters
+    }
 });
 
 // Pre-save hook to hash the access key
