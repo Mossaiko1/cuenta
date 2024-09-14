@@ -5,7 +5,7 @@ const accountSchema = new mongoose.Schema({
     numeroCuenta: { type: Number, unique: true },
     documentoCliente: { type: String, required: true },
     fechaApertura: { type: Date, required: true },
-    saldo: { type: Number, required: true, default: 0, min: [500, 'Balance must be at least 500'] },
+    saldo: { type: Number, required: true, default: 0, min: [0, 'Balance must be at least 500'] },
     claveAcceso: { type: String, required: true } // Removed length restriction
 });
 
