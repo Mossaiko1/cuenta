@@ -1,4 +1,5 @@
 import Account from '../schemas/accountSchema.js';
+import Client from '../schemas/clientSchema.js';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
@@ -26,11 +27,19 @@ export const getAccount = async (req, res) => {
 };
 
 // Create a new account
+
 export const createAccount = async (req, res) => {
     const { documentoCliente, fechaApertura, saldo, claveAcceso } = req.body;
+
     try {
+        const clientExists = await Client.exists({ documentoCliente });
+        if (!clientExists) {
+            return res.status(400).json({ message: 'Client does not exist' });
+        }
+
         const newAccount = new Account({ documentoCliente, fechaApertura, saldo, claveAcceso });
         await newAccount.save();
+
         res.status(201).json(newAccount);
     } catch (error) {
         res.status(400).json({ message: error.message });
