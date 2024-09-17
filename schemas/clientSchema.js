@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const clientSchema = new mongoose.Schema({
     documentoCliente: { 
-        type: String, 
+        type: Number, 
         required: true, 
         unique: true 
     },
@@ -11,7 +11,7 @@ const clientSchema = new mongoose.Schema({
         required: true 
     },
     celular: { 
-        type: String, 
+        type: Number, 
         required: true,
         minlength: [10, 'Celular must be at least 10 characters long'],
         maxlength: [15, 'Celular cannot be more than 15 characters long'],
