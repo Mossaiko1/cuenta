@@ -14,6 +14,12 @@ export const getClients = async (req, res) => {
 export const createClient = async (req, res) => {
     const { documentoCliente, nombreCompleto, celular, fechaNacimiento } = req.body;
     try {
+        // Verificar si el documentoCliente ya existe
+        const existingClient = await Client.findOne({ documentoCliente });
+        if (existingClient) {
+            return res.status(400).json({ message: 'El documento ya existe.' });
+        }
+
         const newClient = new Client({ documentoCliente, nombreCompleto, celular, fechaNacimiento });
         await newClient.save();
         res.status(201).json(newClient);
@@ -46,4 +52,3 @@ export const deleteClient = async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 };
-
