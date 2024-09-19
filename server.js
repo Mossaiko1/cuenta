@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import cors from 'cors';
 import connectDB from './database/config.js';
 import clientRoutes from './routes/clientRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -10,11 +11,13 @@ const app = express();
 
 // Middleware to parse JSON requests
 app.use(express.json());
+app.use(cors());
+
 
 // Define routes
-app.use('/clients', clientRoutes);
-app.use('/users', userRoutes);
-app.use('/accounts', accountRoutes);
+app.use('/api/clients', clientRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/accounts', accountRoutes);
 
 // Start server function
 const startServer = () => {
