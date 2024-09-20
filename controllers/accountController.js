@@ -53,6 +53,8 @@ export const updateAccountPassword = async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
 
+    console.log(`Intentando actualizar contraseña para la cuenta: ${id}`); // Log de la cuenta que se intenta actualizar
+
     if (isNaN(id)) {
         return res.status(400).json({ success: false, message: 'Invalid account number' });
     }
@@ -71,11 +73,13 @@ export const updateAccountPassword = async (req, res) => {
 
         if (!updatedAccount) return res.status(404).json({ success: false, message: 'Account not found' });
 
+        console.log('Contraseña actualizada exitosamente:', updatedAccount); // Log de la cuenta actualizada
         res.json({ success: true, account: updatedAccount });
     } catch (error) {
         handleError(res, error);
     }
 };
+
 
 // Deposit money into an account
 export const deposit = async (req, res) => {
