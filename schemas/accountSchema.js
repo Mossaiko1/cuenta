@@ -1,4 +1,4 @@
-import {mongoose, Schema} from 'mongoose';
+import { mongoose, Schema } from 'mongoose';
 import bcrypt from 'bcrypt';
 
 const accountSchema = new Schema({
@@ -13,31 +13,23 @@ const accountSchema = new Schema({
     claveAcceso: { type: String, required: true }
 });
 
-// Pre-save hook to hash the access key
-accountSchema.pre('save', async function (next) {
-    if (this.isModified('claveAcceso')) {
-        const salt = await bcrypt.genSalt(10);
-        this.claveAcceso = await bcrypt.hash(this.claveAcceso, salt);
-    }
-    next();
-});
-
-// Increment account number before save
+// Pre-save hook to handle various tasks
 accountSchema.pre('save', async function (next) {
     if (this.isNew) {
         const lastAccount = await this.constructor.findOne().sort('-numeroCuenta');
         this.numeroCuenta = lastAccount ? lastAccount.numeroCuenta + 1 : 1;
     }
-    next();
-});
 
-accountSchema.pre('save', async function (next) {
+    if (this.isModified('claveAcceso')) {
+        const salt = await bcrypt.genSalt(10);
+        this.claveAcceso = await bcrypt.hash(this.claveAcceso, salt);
+    }
+
     const clientExists = await mongoose.model('Client').exists({ documentoCliente: this.documentoCliente });
     if (!clientExists) {
-        const error = new Error('Client does not exist');
-        error.name = 'ValidationError';
-        return next(error);
+        return next(new Error('Client does not exist'));
     }
+
     next();
 });
 

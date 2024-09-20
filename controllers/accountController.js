@@ -3,6 +3,8 @@ import Client from '../schemas/clientSchema.js';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
+// Error handler utility
+const handleError = (res, error) => res.status(500).json({ message: error.message });
 
 // Get all accounts
 export const getAccounts = async (req, res) => {
@@ -10,7 +12,7 @@ export const getAccounts = async (req, res) => {
         const accounts = await Account.find();
         res.json(accounts);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        handleError(res, error);
     }
 };
 
@@ -22,24 +24,21 @@ export const getAccount = async (req, res) => {
         if (!account) return res.status(404).json({ message: 'Account not found' });
         res.json(account);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        handleError(res, error);
     }
 };
 
 // Create a new account
-
 export const createAccount = async (req, res) => {
     const { documentoCliente, fechaApertura, saldo, claveAcceso } = req.body;
 
-    try {
-        const clientExists = await Client.exists({ documentoCliente });
-        if (!clientExists) {
-            return res.status(400).json({ message: 'Client does not exist' });
-        }
+    if (!documentoCliente || !fechaApertura || !saldo || !claveAcceso) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
 
+    try {
         const newAccount = new Account({ documentoCliente, fechaApertura, saldo, claveAcceso });
         await newAccount.save();
-
         res.status(201).json(newAccount);
     } catch (error) {
         res.status(400).json({ message: error.message });
@@ -51,27 +50,22 @@ export const updateAccountPassword = async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
 
-    // Check if the ID is a valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Invalid account ID' });
     }
 
     try {
-        // Validate input
         if (!newPassword || newPassword.length < 4) {
             return res.status(400).json({ message: 'Password must be at least 4 characters long' });
         }
 
-        // Hash the new password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-        // Find the account and update the password
         const updatedAccount = await Account.findByIdAndUpdate(id, { claveAcceso: hashedPassword }, { new: true });
         if (!updatedAccount) return res.status(404).json({ message: 'Account not found' });
 
         res.json(updatedAccount);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        handleError(res, error);
     }
 };
 
@@ -88,7 +82,7 @@ export const deposit = async (req, res) => {
         await account.save();
         res.json(account);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        handleError(res, error);
     }
 };
 
@@ -107,13 +101,17 @@ export const withdraw = async (req, res) => {
         await account.save();
         res.json(account);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        handleError(res, error);
     }
 };
 
 // Delete an account
 export const deleteAccount = async (req, res) => {
     const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: 'Invalid account ID' });
+    }
+
     try {
         const account = await Account.findOne({ numeroCuenta: id });
         if (!account) return res.status(404).json({ message: 'Account not found' });
@@ -123,7 +121,6 @@ export const deleteAccount = async (req, res) => {
         await Account.deleteOne({ numeroCuenta: id });
         res.json({ message: 'Account deleted' });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        handleError(res, error);
     }
 };
-
