@@ -1,16 +1,14 @@
 import Account from '../schemas/accountSchema.js';
-import Client from '../schemas/clientSchema.js';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
-// Error handler utility
 const handleError = (res, error) => res.status(500).json({ message: error.message });
 
 // Get all accounts
 export const getAccounts = async (req, res) => {
     try {
-        const accounts = await Account.find();
-        res.json(accounts);
+        const accounts = await Account.find().populate('documentoCliente', 'nombre'); // Populate client data if needed
+        res.json({ success: true, accounts });
     } catch (error) {
         handleError(res, error);
     }
@@ -20,9 +18,9 @@ export const getAccounts = async (req, res) => {
 export const getAccount = async (req, res) => {
     const { id } = req.params;
     try {
-        const account = await Account.findOne({ numeroCuenta: id });
-        if (!account) return res.status(404).json({ message: 'Account not found' });
-        res.json(account);
+        const account = await Account.findOne({ numeroCuenta: id }).populate('documentoCliente', 'nombre');
+        if (!account) return res.status(404).json({ success: false, message: 'Account not found' });
+        res.json({ success: true, account });
     } catch (error) {
         handleError(res, error);
     }
@@ -32,38 +30,43 @@ export const getAccount = async (req, res) => {
 export const createAccount = async (req, res) => {
     const { documentoCliente, fechaApertura, saldo, claveAcceso } = req.body;
 
-    if (!documentoCliente || !fechaApertura || !saldo || !claveAcceso) {
-        return res.status(400).json({ message: 'All fields are required' });
+    if (!documentoCliente || !fechaApertura || saldo === undefined || saldo < 0 || !claveAcceso) {
+        return res.status(400).json({ success: false, message: 'All fields are required' });
     }
 
     try {
         const newAccount = new Account({ documentoCliente, fechaApertura, saldo, claveAcceso });
         await newAccount.save();
-        res.status(201).json(newAccount);
+        res.status(201).json({ success: true, account: newAccount });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({ success: false, message: error.message });
     }
 };
 
-// Update the password of an account by ID (PUT method)
+// Update the password of an account by number (PUT method)
 export const updateAccountPassword = async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: 'Invalid account ID' });
+    if (isNaN(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid account number' });
     }
 
     try {
         if (!newPassword || newPassword.length < 4) {
-            return res.status(400).json({ message: 'Password must be at least 4 characters long' });
+            return res.status(400).json({ success: false, message: 'Password must be at least 4 characters long' });
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        const updatedAccount = await Account.findByIdAndUpdate(id, { claveAcceso: hashedPassword }, { new: true });
-        if (!updatedAccount) return res.status(404).json({ message: 'Account not found' });
+        const updatedAccount = await Account.findOneAndUpdate(
+            { numeroCuenta: Number(id) },
+            { claveAcceso: hashedPassword },
+            { new: true }
+        );
 
-        res.json(updatedAccount);
+        if (!updatedAccount) return res.status(404).json({ success: false, message: 'Account not found' });
+
+        res.json({ success: true, account: updatedAccount });
     } catch (error) {
         handleError(res, error);
     }
@@ -72,15 +75,15 @@ export const updateAccountPassword = async (req, res) => {
 // Deposit money into an account
 export const deposit = async (req, res) => {
     const { numeroCuenta, monto } = req.body;
-    if (monto <= 0) return res.status(400).json({ message: 'Amount must be positive' });
+    if (monto <= 0) return res.status(400).json({ success: false, message: 'Amount must be positive' });
 
     try {
         const account = await Account.findOne({ numeroCuenta });
-        if (!account) return res.status(404).json({ message: 'Account not found' });
+        if (!account) return res.status(404).json({ success: false, message: 'Account not found' });
 
         account.saldo += monto;
         await account.save();
-        res.json(account);
+        res.json({ success: true, account });
     } catch (error) {
         handleError(res, error);
     }
@@ -89,17 +92,17 @@ export const deposit = async (req, res) => {
 // Withdraw money from an account
 export const withdraw = async (req, res) => {
     const { numeroCuenta, monto } = req.body;
-    if (monto <= 0) return res.status(400).json({ message: 'Amount must be positive' });
+    if (monto <= 0) return res.status(400).json({ success: false, message: 'Amount must be positive' });
 
     try {
         const account = await Account.findOne({ numeroCuenta });
-        if (!account) return res.status(404).json({ message: 'Account not found' });
+        if (!account) return res.status(404).json({ success: false, message: 'Account not found' });
 
-        if (monto > account.saldo) return res.status(400).json({ message: 'Insufficient funds' });
+        if (monto > account.saldo) return res.status(400).json({ success: false, message: 'Insufficient funds' });
 
         account.saldo -= monto;
         await account.save();
-        res.json(account);
+        res.json({ success: true, account });
     } catch (error) {
         handleError(res, error);
     }
@@ -107,19 +110,21 @@ export const withdraw = async (req, res) => {
 
 // Delete an account
 export const deleteAccount = async (req, res) => {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ message: 'Invalid account ID' });
+    const { id } = req.params; // Este 'id' se refiere a numeroCuenta
+    
+    // Verifica si el numeroCuenta es un número válido
+    if (isNaN(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid account number' });
     }
 
     try {
-        const account = await Account.findOne({ numeroCuenta: id });
-        if (!account) return res.status(404).json({ message: 'Account not found' });
+        const account = await Account.findOne({ numeroCuenta: Number(id) });
+        if (!account) return res.status(404).json({ success: false, message: 'Account not found' });
 
-        if (account.saldo !== 0) return res.status(400).json({ message: 'Cannot delete account with non-zero balance' });
+        if (account.saldo !== 0) return res.status(400).json({ success: false, message: 'Cannot delete account with non-zero balance' });
 
-        await Account.deleteOne({ numeroCuenta: id });
-        res.json({ message: 'Account deleted' });
+        await Account.deleteOne({ numeroCuenta: Number(id) });
+        res.json({ success: true, message: 'Account deleted' });
     } catch (error) {
         handleError(res, error);
     }
