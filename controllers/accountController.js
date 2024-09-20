@@ -35,6 +35,11 @@ export const createAccount = async (req, res) => {
     }
 
     try {
+        const clientExists = await mongoose.model('Client').exists({ documentoCliente });
+        if (!clientExists) {
+            return res.status(400).json({ success: false, message: 'Client does not exist' });
+        }
+
         const newAccount = new Account({ documentoCliente, fechaApertura, saldo, claveAcceso });
         await newAccount.save();
         res.status(201).json({ success: true, account: newAccount });
@@ -75,7 +80,7 @@ export const updateAccountPassword = async (req, res) => {
 // Deposit money into an account
 export const deposit = async (req, res) => {
     const { numeroCuenta, monto } = req.body;
-    if (monto <= 0) return res.status(400).json({ success: false, message: 'Amount must be positive' });
+    if (typeof monto !== 'number' || monto <= 0) return res.status(400).json({ success: false, message: 'Amount must be a positive number' });
 
     try {
         const account = await Account.findOne({ numeroCuenta });
@@ -92,7 +97,7 @@ export const deposit = async (req, res) => {
 // Withdraw money from an account
 export const withdraw = async (req, res) => {
     const { numeroCuenta, monto } = req.body;
-    if (monto <= 0) return res.status(400).json({ success: false, message: 'Amount must be positive' });
+    if (typeof monto !== 'number' || monto <= 0) return res.status(400).json({ success: false, message: 'Amount must be a positive number' });
 
     try {
         const account = await Account.findOne({ numeroCuenta });
