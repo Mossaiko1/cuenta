@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 const accountSchema = new Schema({
     numeroCuenta: { type: Number, unique: true },
     documentoCliente: {
-        type: Schema.Types.Number,
+        type: Schema.Types.ObjectId,
         ref: 'Client',
         required: true
     },
