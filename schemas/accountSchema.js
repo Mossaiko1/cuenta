@@ -5,7 +5,9 @@ const accountSchema = new Schema({
     numeroCuenta: { type: Number, unique: true },
     documentoCliente: {
         type: Number,
-        required: true
+        required: true,
+        unique: true,
+        index: true 
     },
     fechaApertura: { type: Date, required: true },
     saldo: { type: Number, required: true, default: 0, min: [0, 'Balance must be at least 0'] },
