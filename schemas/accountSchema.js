@@ -4,8 +4,7 @@ import bcrypt from 'bcrypt';
 const accountSchema = new Schema({
     numeroCuenta: { type: Number, unique: true },
     documentoCliente: {
-        type: Schema.Types.ObjectId,
-        ref: 'Client',
+        type: Number,
         required: true
     },
     fechaApertura: { type: Date, required: true },
@@ -25,6 +24,7 @@ accountSchema.pre('save', async function (next) {
         this.claveAcceso = await bcrypt.hash(this.claveAcceso, salt);
     }
 
+    // Verificar que el cliente existe basándose en documentoCliente
     const clientExists = await mongoose.model('Client').exists({ documentoCliente: this.documentoCliente });
     if (!clientExists) {
         return next(new Error('Client does not exist'));
